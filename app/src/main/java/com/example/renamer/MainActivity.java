@@ -1,46 +1,71 @@
-package com.example.renamer;
+package your.package.name;
 
+import android.app.Activity;
 import android.os.Bundle;
-import android.view.View;
+import android.os.Environment;
+import android.provider.Settings;
+import android.content.Intent;
+import android.net.Uri;
 import android.widget.Button;
-import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
-import java.io.File;
-import java.util.Random;
+import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity {
+import java.io.File;
+import java.util.ArrayList;
+
+public class MainActivity extends Activity {
+
+    TextView result;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
-        
-        Button btnRename = findViewById(R.id.btn_rename);
-        btnRename.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // 获取文件目录
-                File downloadDir = getExternalFilesDir(null);
-                if (downloadDir != null && downloadDir.exists()) {
-                    File[] files = downloadDir.listFiles();
-                    if (files != null && files.length > 0) {
-                        for (File file : files) {
-                            if (file.isFile()) {
-                                // 生成随机文件名
-                                String newName = "com.android.system." 
-                                    + new Random().nextInt(1000) 
-                                    + ".cache";
-                                File newFile = new File(downloadDir, newName);
-                                file.renameTo(newFile);
-                            }
-                        }
-                        Toast.makeText(MainActivity.this, 
-                            "重命名完成！", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(MainActivity.this, 
-                            "没有文件", Toast.LENGTH_SHORT).show();
-                    }
-                }
+
+        result = findViewById(R.id.result);
+
+        Button button = findViewById(R.id.start);
+
+        button.setOnClickListener(v -> {
+
+            if (!Environment.isExternalStorageManager()) {
+
+                Intent intent = new Intent(
+                        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                        Uri.parse("package:" + getPackageName())
+                );
+
+                startActivity(intent);
+
+            } else {
+
+                rename();
+
             }
+
         });
+
     }
+
+
+    private void rename(){
+
+        File dir = Environment
+                .getExternalStorageDirectory();
+
+
+        FileRenamer renamer = new FileRenamer();
+
+
+        int count = renamer.renameFiles(dir);
+
+
+        result.setText(
+                "完成，共修改 "
+                + count
+                + " 个文件"
+        );
+
+    }
+
 }
