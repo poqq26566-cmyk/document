@@ -7,15 +7,25 @@
     android:padding="16dp">
 
     <Button
-        android:id="@+id/btn_rename"
+        android:id="@+id/pick_dir"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="重命名文件"
-        android:textSize="18sp" />
-        
+        android:text="① 选择要整理的文件夹"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="② 开始批量重命名"
+        android:textSize="16sp"
+        android:enabled="false" />
+
     <TextView
+        android:id="@+id/result"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="点击按钮将重命名所有文件"
+        android:text="请先选择一个文件夹（建议选 Download 目录）"
         android:layout_marginTop="20dp" />
 </LinearLayout>
