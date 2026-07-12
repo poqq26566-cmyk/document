@@ -12,34 +12,54 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.documentfile.provider.DocumentFile;
 
-/**
- * 批量重命名工具（仅限用户主动通过系统文件夹选择器授权的目录，例如 Download）。
- *
- * 不申请 MANAGE_EXTERNAL_STORAGE 等敏感权限：改用 Storage Access Framework
- * （ACTION_OPEN_DOCUMENT_TREE），只能访问用户明确选中并授权的那一个文件夹，
- * 不会触碰系统文件或其他目录。
- */
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     private TextView result;
     private Button startButton;
+
     private Uri selectedTreeUri;
+    private List<Uri> selectedFileUris;
 
     private final ActivityResultLauncher<Uri> pickDirLauncher =
             registerForActivityResult(new ActivityResultContracts.OpenDocumentTree(), uri -> {
                 if (uri == null) {
                     return;
                 }
-                // 持久化授权，避免下次启动 App 需要重新选择
                 getContentResolver().takePersistableUriPermission(
                         uri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 );
                 selectedTreeUri = uri;
+                selectedFileUris = null;
                 startButton.setEnabled(true);
                 DocumentFile picked = DocumentFile.fromTreeUri(this, uri);
                 String name = picked != null ? picked.getName() : uri.toString();
-                result.setText("已选择目录：" + name + "\n点击「开始批量重命名」继续");
+                result.setText("已选择文件夹：" + name + "\n点击「开始批量重命名」继续");
+            });
+
+    private final ActivityResultLauncher<String[]> pickFilesLauncher =
+            registerForActivityResult(new ActivityResultContracts.OpenMultipleDocuments(), uris -> {
+                if (uris == null || uris.isEmpty()) {
+                    return;
+                }
+                List<Uri> persisted = new ArrayList<>();
+                for (Uri uri : uris) {
+                    try {
+                        getContentResolver().takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        );
+                    } catch (SecurityException ignored) {
+                    }
+                    persisted.add(uri);
+                }
+                selectedFileUris = persisted;
+                selectedTreeUri = null;
+                startButton.setEnabled(true);
+                result.setText("已选择 " + persisted.size() + " 个文件\n点击「开始批量重命名」继续");
             });
 
     @Override
@@ -49,12 +69,14 @@ public class MainActivity extends AppCompatActivity {
 
         result = findViewById(R.id.result);
         startButton = findViewById(R.id.start);
-        Button pickButton = findViewById(R.id.pick_dir);
+        Button pickDirButton = findViewById(R.id.pick_dir);
+        Button pickFilesButton = findViewById(R.id.pick_files);
 
-        pickButton.setOnClickListener(v -> pickDirLauncher.launch(null));
+        pickDirButton.setOnClickListener(v -> pickDirLauncher.launch(null));
+        pickFilesButton.setOnClickListener(v -> pickFilesLauncher.launch(new String[]{"*/*"}));
 
         startButton.setOnClickListener(v -> {
-            if (selectedTreeUri == null) {
+            if (selectedTreeUri == null && (selectedFileUris == null || selectedFileUris.isEmpty())) {
                 return;
             }
             confirmAndRename();
@@ -62,11 +84,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void confirmAndRename() {
+        String scopeDesc = selectedTreeUri != null
+                ? "所选文件夹下所有文件"
+                : "所选的 " + selectedFileUris.size() + " 个文件";
         new AlertDialog.Builder(this)
                 .setTitle("确认批量重命名")
-                .setMessage("将把所选目录下所有文件改成随机名称（保留扩展名）。\n" +
-                        "原文件名会记录在 App 内部日志中，可随时查看还原。\n" +
-                        "确定要继续吗？")
+                .setMessage("将把" + scopeDesc + "改成随机名称（保留扩展名）。\n"
+                        + "原文件名会记录在 App 内部日志中，可随时查看还原。\n"
+                        + "确定要继续吗？")
                 .setPositiveButton("确定", (dialog, which) -> rename())
                 .setNegativeButton("取消", null)
                 .show();
@@ -74,7 +99,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void rename() {
         FileRenamer renamer = new FileRenamer(this);
-        int count = renamer.renameFiles(selectedTreeUri);
+        int count = selectedTreeUri != null
+                ? renamer.renameFiles(selectedTreeUri)
+                : renamer.renameFiles(selectedFileUris);
         result.setText("完成，共修改 " + count + " 个文件\n（原文件名映射已保存在 App 内部日志）");
     }
 }
