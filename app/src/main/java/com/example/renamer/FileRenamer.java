@@ -1,4 +1,4 @@
-package your.package.name;
+package com.example.renamer;
 
 import java.io.File;
 import java.security.SecureRandom;
