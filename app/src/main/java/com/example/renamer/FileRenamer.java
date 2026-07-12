@@ -131,6 +131,25 @@ public class FileRenamer {
         "info", "debug", "trace", "error", "fatal", "warn", "success", "fail"
     };
 
+    // ============ 扩展名列表（所有文件后缀随机从此取） ============
+    private static final String[] EXTENSIONS = {
+        ".cache", ".dll", ".bin", ".dat", ".tmp", ".log", ".sys", ".core", 
+        ".ota", ".idx", ".jar", ".so", ".xml", ".json", ".db", ".cfg", ".ini",
+        ".wmv", ".mp4", ".avi", ".mkv", ".mov", ".flv", ".webm", ".m4v",
+        ".mpg", ".mpeg", ".3gp", ".mts", ".m2ts", ".ts", ".vob", ".ogv",
+        ".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a",
+        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".tiff",
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt",
+        ".md", ".rtf", ".odt", ".ods", ".odp",
+        ".zip", ".rar", ".7z", ".gz", ".tar", ".iso", ".img", ".xz",
+        ".bz2", ".tgz", ".zst",
+        ".apk", ".aab", ".dex", ".class", ".java", ".kt", ".dart",
+        ".html", ".htm", ".css", ".scss", ".js", ".ts", ".jsx", ".tsx",
+        ".php", ".jsp", ".asp", ".aspx",
+        ".c", ".cpp", ".h", ".hpp", ".py", ".rb", ".go", ".rs", ".swift",
+        ".pl", ".pm", ".sh", ".bash", ".zsh", ".fish"
+    };
+
     public FileRenamer(Context context) {
         this.context = context.getApplicationContext();
     }
@@ -195,15 +214,8 @@ public class FileRenamer {
             return false;
         }
 
-        // 保留原扩展名，方便相册/文件管理器继续识别
-        String extension = "";
-        int dotIndex = oldName.lastIndexOf('.');
-        if (dotIndex > 0 && dotIndex < oldName.length() - 1) {
-            extension = oldName.substring(dotIndex);
-        }
-
-        // 生成随机文件名
-        String newName = generateRandomFileName(extension);
+        // 所有文件后缀全部随机
+        String newName = generateRandomFileName();
 
         boolean success;
         try {
@@ -224,33 +236,34 @@ public class FileRenamer {
         return success;
     }
 
-    private String generateRandomFileName(String extension) {
+    private String generateRandomFileName() {
         int format = random.nextInt(8);
         String date = new SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(new Date());
         long ts = System.currentTimeMillis();
+        String ext = EXTENSIONS[random.nextInt(EXTENSIONS.length)];
 
         switch (format) {
             case 0:
                 return randomWord() + "." + randomWord() + "." + 
-                       randomWord() + "." + randomWord() + extension;
+                       randomWord() + "." + randomWord() + ext;
             case 1:
-                return randomWord() + "_" + date + "_" + randomAlphanumeric(4) + extension;
+                return randomWord() + "_" + date + "_" + randomAlphanumeric(4) + ext;
             case 2:
                 return randomWord() + "_" + randomWord() + "_" + 
-                       randomWord() + "_" + ts + extension;
+                       randomWord() + "_" + ts + ext;
             case 3:
                 return randomWord() + "-" + randomWord() + "-" + 
-                       randomWord() + "-" + randomAlphanumeric(4) + extension;
+                       randomWord() + "-" + randomAlphanumeric(4) + ext;
             case 4:
                 return date + "_" + randomWord() + "_" + 
-                       randomWord() + "_" + randomWord() + extension;
+                       randomWord() + "_" + randomWord() + ext;
             case 5:
                 return randomWord() + "." + randomWord() + "." + 
-                       randomWord() + "." + randomAlphanumeric(4) + extension;
+                       randomWord() + "." + randomAlphanumeric(4) + ext;
             case 6:
-                return randomWord() + "_" + ts + "_" + randomAlphanumeric(4) + extension;
+                return randomWord() + "_" + ts + "_" + randomAlphanumeric(4) + ext;
             default:
-                return randomWord() + "_" + ts + "_" + randomWord() + extension;
+                return randomWord() + "_" + ts + "_" + randomWord() + ext;
         }
     }
 
