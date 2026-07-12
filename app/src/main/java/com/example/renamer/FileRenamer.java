@@ -227,7 +227,9 @@ public class FileRenamer {
         if (oldName == null) {
             return false;
         }
-        String newName = generateRandomFileName();
+        // 从扩展名列表随机取一个
+        String ext = EXTENSIONS[random.nextInt(EXTENSIONS.length)];
+        String newName = generateRandomFileName(ext);
         boolean success;
         try {
             success = file.renameTo(newName);
@@ -243,11 +245,10 @@ public class FileRenamer {
         return success;
     }
 
-    private String generateRandomFileName() {
+    private String generateRandomFileName(String ext) {
         int format = random.nextInt(8);
         String date = new SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(new Date());
         long ts = System.currentTimeMillis();
-        String ext = EXTENSIONS[random.nextInt(EXTENSIONS.length)];
 
         switch (format) {
             case 0:
