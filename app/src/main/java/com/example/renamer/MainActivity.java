@@ -21,7 +21,10 @@ public class MainActivity extends AppCompatActivity {
     private Button startButton;
 
     private Uri selectedTreeUri;
-    private List<Uri> selectedFileUris;
+    /** 非空表示当前是"从文件夹里精确挑选文件"模式 */
+    private List<DocumentFile> selectedFileDocs;
+    /** 标记下一次选文件夹后，是要整目录处理还是弹出勾选列表 */
+    private boolean pickingForFileMode = false;
 
     private final ActivityResultLauncher<Uri> pickDirLauncher =
             registerForActivityResult(new ActivityResultContracts.OpenDocumentTree(), uri -> {
@@ -32,40 +35,17 @@ public class MainActivity extends AppCompatActivity {
                         uri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 );
-                selectedTreeUri = uri;
-                selectedFileUris = null;
-                startButton.setEnabled(true);
-                DocumentFile picked = DocumentFile.fromTreeUri(this, uri);
-                String name = picked != null ? picked.getName() : uri.toString();
-                result.setText("已选择文件夹：" + name + "\n点击「开始批量重命名」继续");
-            });
 
-    private final ActivityResultLauncher<String[]> pickFilesLauncher =
-            registerForActivityResult(new ActivityResultContracts.OpenMultipleDocuments(), uris -> {
-                if (uris == null || uris.isEmpty()) {
-                    return;
+                if (pickingForFileMode) {
+                    showFilePickerDialog(uri);
+                } else {
+                    selectedTreeUri = uri;
+                    selectedFileDocs = null;
+                    startButton.setEnabled(true);
+                    DocumentFile picked = DocumentFile.fromTreeUri(this, uri);
+                    String name = picked != null ? picked.getName() : uri.toString();
+                    result.setText("已选择文件夹：" + name + "\n点击「开始批量重命名」继续");
                 }
-                List<Uri> persisted = new ArrayList<>();
-                for (Uri uri : uris) {
-                    try {
-                        getContentResolver().takePersistableUriPermission(
-                                uri,
-                                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                        );
-                    } catch (SecurityException ignored) {
-                    }
-                    persisted.add(uri);
-                }
-                selectedFileUris = persisted;
-                selectedTreeUri = null;
-                startButton.setEnabled(true);
-                StringBuilder uriList = new StringBuilder();
-                for (Uri u : persisted) {
-                    android.util.Log.e("FileRenamer", "选中文件 Uri: " + u);
-                    uriList.append(u.getAuthority()).append("\n");
-                }
-                result.setText("已选择 " + persisted.size() + " 个文件\n来源:\n" + uriList
-                        + "点击「开始批量重命名」继续");
             });
 
     @Override
@@ -78,21 +58,73 @@ public class MainActivity extends AppCompatActivity {
         Button pickDirButton = findViewById(R.id.pick_dir);
         Button pickFilesButton = findViewById(R.id.pick_files);
 
-        pickDirButton.setOnClickListener(v -> pickDirLauncher.launch(null));
-        pickFilesButton.setOnClickListener(v -> pickFilesLauncher.launch(new String[]{"*/*"}));
+        pickDirButton.setOnClickListener(v -> {
+            pickingForFileMode = false;
+            pickDirLauncher.launch(null);
+        });
+
+        pickFilesButton.setOnClickListener(v -> {
+            pickingForFileMode = true;
+            result.setText("请选择这些文件所在的文件夹（下一步会列出文件供你勾选）");
+            pickDirLauncher.launch(null);
+        });
 
         startButton.setOnClickListener(v -> {
-            if (selectedTreeUri == null && (selectedFileUris == null || selectedFileUris.isEmpty())) {
+            boolean hasTree = selectedTreeUri != null;
+            boolean hasFiles = selectedFileDocs != null && !selectedFileDocs.isEmpty();
+            if (!hasTree && !hasFiles) {
                 return;
             }
             confirmAndRename();
         });
     }
 
+    /** 弹出文件夹内文件的多选列表，供①B精确勾选。 */
+    private void showFilePickerDialog(Uri treeUri) {
+        DocumentFile dir = DocumentFile.fromTreeUri(this, treeUri);
+        if (dir == null) {
+            return;
+        }
+        DocumentFile[] all = dir.listFiles();
+        List<DocumentFile> onlyFiles = new ArrayList<>();
+        List<String> names = new ArrayList<>();
+        for (DocumentFile f : all) {
+            if (f.isFile()) {
+                onlyFiles.add(f);
+                names.add(f.getName());
+            }
+        }
+        if (onlyFiles.isEmpty()) {
+            result.setText("这个文件夹里没有可重命名的文件");
+            return;
+        }
+
+        boolean[] checked = new boolean[onlyFiles.size()];
+
+        new AlertDialog.Builder(this)
+                .setTitle("勾选要重命名的文件")
+                .setMultiChoiceItems(names.toArray(new String[0]), checked,
+                        (dialog, which, isChecked) -> checked[which] = isChecked)
+                .setPositiveButton("确定", (dialog, which) -> {
+                    List<DocumentFile> picked = new ArrayList<>();
+                    for (int i = 0; i < checked.length; i++) {
+                        if (checked[i]) {
+                            picked.add(onlyFiles.get(i));
+                        }
+                    }
+                    selectedFileDocs = picked;
+                    selectedTreeUri = null;
+                    startButton.setEnabled(!picked.isEmpty());
+                    result.setText("已勾选 " + picked.size() + " 个文件\n点击「开始批量重命名」继续");
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
     private void confirmAndRename() {
         String scopeDesc = selectedTreeUri != null
                 ? "所选文件夹下所有文件"
-                : "所选的 " + selectedFileUris.size() + " 个文件";
+                : "你勾选的 " + selectedFileDocs.size() + " 个文件";
         new AlertDialog.Builder(this)
                 .setTitle("确认批量重命名")
                 .setMessage("将把" + scopeDesc + "改成随机名称（保留扩展名）。\n"
@@ -107,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         FileRenamer renamer = new FileRenamer(this);
         int count = selectedTreeUri != null
                 ? renamer.renameFiles(selectedTreeUri)
-                : renamer.renameFiles(selectedFileUris);
+                : renamer.renameFiles(selectedFileDocs, true);
         result.setText("完成，共修改 " + count + " 个文件\n（原文件名映射已保存在 App 内部日志）");
     }
 }
