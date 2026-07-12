@@ -192,6 +192,12 @@ public class FileRenamer {
         } catch (Exception e) {
             success = false;
         }
+
+        if (!success) {
+            // DocumentFile 标准 rename 不支持时（常见于"最近"页面选出的 MediaStore 文件），
+            // 降级走 MediaStore 的 DISPLAY_NAME 更新接口再试一次。
+            success = renameViaMediaStore(file.getUri(), newName);
+        }
         if (success) {
             appendLog(oldName, newName);
         }
