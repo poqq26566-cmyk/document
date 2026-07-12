@@ -5,7 +5,7 @@
         android:allowBackup="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.FileRenamer"
-        android:label="文件重命名">
+        android:label="Obscura">
 
         <activity
             android:name=".MainActivity"
