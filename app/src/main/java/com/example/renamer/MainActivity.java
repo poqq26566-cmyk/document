@@ -1,4 +1,4 @@
-package your.package.name;
+package com.example.renamer;
 
 import android.app.Activity;
 import android.os.Bundle;
