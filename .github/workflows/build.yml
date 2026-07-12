@@ -23,35 +23,11 @@ jobs:
     
     - name: Build APK
       run: |
-        # 创建必要目录
-        mkdir -p app/build/classes
-        mkdir -p app/build/libs
-        
-        # 编译Java代码
-        javac -d app/build/classes \
-          -cp $ANDROID_HOME/platforms/android-33/android.jar \
-          app/src/main/java/com/example/renamer/*.java
-        
-        # 打包成dex
-        dx --dex --output=app/build/classes.dex app/build/classes
-        
-        # 打包APK
-        aapt package -f \
-          -M app/src/main/AndroidManifest.xml \
-          -I $ANDROID_HOME/platforms/android-33/android.jar \
-          -F app/build/app-unsigned.apk \
-          app/build/classes.dex
-        
-        # 签名APK (使用debug签名)
-        apksigner sign --ks debug.keystore \
-          --ks-pass pass:android \
-          --key-pass pass:android \
-          app/build/app-unsigned.apk
-        
-        mv app/build/app-unsigned.apk app/build/app-debug.apk
+        chmod +x gradlew
+        ./gradlew assembleDebug
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
-        path: app/build/app-debug.apk
+        path: app/build/outputs/apk/debug/*.apk
