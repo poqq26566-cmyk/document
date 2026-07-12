@@ -75,6 +75,20 @@ public class FileRenamer {
         return count;
     }
 
+    /** 模式③：对已经从某个树里取出的 DocumentFile 精确挑选重命名（保证带树权限，可正常改名）。 */
+    public int renameFiles(List<DocumentFile> files, boolean isDocumentFileList) {
+        if (files == null || files.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        for (DocumentFile file : files) {
+            if (renameOne(file)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private boolean renameOne(DocumentFile file) {
         if (file == null || !file.isFile()) {
             return false;
