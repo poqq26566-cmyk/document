@@ -17,28 +17,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-/**
- * 基于 Storage Access Framework 的批量重命名，支持两种范围：
- * ① 一整个用户授权的目录树（{@link #renameFiles(Uri)}，来自 ACTION_OPEN_DOCUMENT_TREE）；
- * ② 一组具体选中的文件（{@link #renameFiles(List)}，来自 ACTION_OPEN_DOCUMENT 多选）。
- *
- * 标准 DocumentFile#renameTo 在部分来源（尤其是系统选择器"最近"页面选出的 MediaStore 文件）
- * 上不受支持，会直接失败；此时自动降级走 MediaStore 的 DISPLAY_NAME 更新接口再试一次。
- *
- * 每次重命名都会把「原文件名 -> 新文件名」写入 App 私有目录下的
- * {@code rename_log.txt}，方便日后核对或手动还原。
- */
 public class FileRenamer {
 
     private final Context context;
     private final Random random = new SecureRandom();
 
-    /** 最近一次因缺少 MediaStore 写入授权而失败的异常，Activity 可据此发起授权请求。 */
     public Exception pendingSecurityException;
 
     // ============ 词库 ============
     private static final String[] WORDS = {
-        // 公司/品牌 (60)
         "google", "microsoft", "apple", "amazon", "facebook", "twitter", "instagram",
         "whatsapp", "telegram", "signal", "zoom", "slack", "discord", "reddit",
         "netflix", "spotify", "uber", "airbnb", "dropbox", "box", "salesforce",
@@ -47,14 +34,10 @@ public class FileRenamer {
         "samsung", "xiaomi", "huawei", "oppo", "vivo", "zte", "lenovo", "asus",
         "acer", "gigabyte", "msi", "coolpad", "oneplus", "blackberry", "htc",
         "sharp", "fujitsu", "nec", "olympus", "canon", "nikon", "fujifilm",
-
-        // 中国公司 (30)
         "alibaba", "tencent", "baidu", "meizu", "gionee", "hisense", "tcl",
         "skyworth", "konka", "changhong", "haier", "gree", "midea", "galanz",
         "supor", "joyoung", "roborock", "ecovacs", "dji", "xiaopeng", "nio",
         "geely", "chery", "byd", "greatwall", "changan", "dongfeng",
-
-        // 系统/技术 (60)
         "android", "ios", "windows", "linux", "unix", "macos", "tvos", "watchos",
         "kernel", "driver", "firmware", "bootloader", "recovery", "ota", "adb",
         "fastboot", "twrp", "magisk", "supersu", "busybox", "terminal",
@@ -63,8 +46,6 @@ public class FileRenamer {
         "nfc", "bluetooth", "wifi", "5g", "4g", "lte", "gps", "glonass", "galileo",
         "beidou", "zigbee", "thread", "matter", "homekit", "alexa", "assistant",
         "siri", "bixby", "cortana", "heygoogle",
-
-        // 编程语言 (50)
         "java", "kotlin", "python", "ruby", "php", "swift", "rust", "go", "golang",
         "cplusplus", "csharp", "javascript", "typescript", "html", "css", "scss",
         "less", "sql", "plsql", "mongodb", "redis", "elasticsearch", "graphql",
@@ -72,8 +53,6 @@ public class FileRenamer {
         "dart", "flutter", "react", "vue", "angular", "svelte", "solidjs",
         "qwik", "alpine", "stimulus", "htmx", "wasm", "assembly", "fortran",
         "pascal", "ada", "lisp", "scheme", "clojure", "elixir", "erlang",
-
-        // 框架/库 (50)
         "spring", "hibernate", "mybatis", "struts", "react", "vue", "angular",
         "jquery", "bootstrap", "tailwind", "flutter", "reactnative", "xamarin",
         "cocos", "unity", "unreal", "godot", "opencv", "tensorflow", "pytorch",
@@ -81,32 +60,24 @@ public class FileRenamer {
         "fastapi", "rails", "laravel", "symfony", "codeigniter", "cakephp",
         "phoenix", "groovy", "scala", "haskell", "nodejs", "deno", "bun",
         "express", "nestjs", "nextjs", "nuxtjs", "gatsby", "remix", "swiftui",
-
-        // 数据库 (40)
         "mysql", "postgresql", "oracle", "sqlite", "mongodb", "cassandra",
         "redis", "memcached", "elasticsearch", "solr", "clickhouse", "doris",
         "tidb", "oceanbase", "polardb", "gaussdb", "tair", "hbase", "hive", "spark",
         "flink", "kafka", "pulsar", "rabbitmq", "rocketmq", "activemq", "zeromq",
         "influxdb", "prometheus", "grafana", "victoriametrics", "thanos", "cortex",
         "loki", "tempo", "mimir", "alertmanager", "zookeeper", "etcd", "consul",
-
-        // 云/服务器 (40)
         "aws", "azure", "gcp", "aliyun", "tencentcloud", "baiducloud", "huaweicloud",
         "digitalocean", "linode", "vultr", "cloudflare", "fastly", "akamai",
         "nginx", "apache", "tomcat", "jetty", "undertow", "wildfly", "weblogic",
         "websphere", "jboss", "glassfish", "resin", "lighttpd", "caddy", "traefik",
         "envoy", "haproxy", "varnish", "squid", "dnsmasq", "bind", "unbound", "powerdns",
         "minio", "ceph", "glusterfs", "longhorn", "rancher", "k3s", "k8s", "openshift",
-
-        // 加密/安全 (40)
         "crypto", "aes", "rsa", "ecc", "sha256", "md5", "base64", "hex", "binary",
         "encrypt", "decrypt", "signature", "certificate", "firewall", "antivirus",
         "malware", "ransomware", "phishing", "spam", "hack", "exploit", "vulnerability",
         "patch", "update", "hotfix", "backdoor", "trojan", "worm", "virus", "rootkit",
         "keylogger", "adware", "spyware", "scareware", "cryptojacking", "blockchain",
         "wallet", "mining", "hashrate", "difficulty", "nonce", "merkle",
-
-        // 游戏/娱乐 (60)
         "game", "play", "music", "video", "movie", "tv", "show", "song", "album",
         "podcast", "stream", "broadcast", "live", "vod", "drama", "comedy",
         "action", "adventure", "rpg", "fps", "mmo", "moba", "card", "puzzle",
@@ -115,8 +86,6 @@ public class FileRenamer {
         "overwatch", "diablo", "starcraft", "warcraft", "hearthstone", "pubg",
         "cod", "bf", "apex", "warzone", "destiny", "halo", "gears", "uncharted",
         "godofwar", "horizon", "zelda", "mario", "pokemon", "sonic", "pacman",
-
-        // 通用词 (80)
         "system", "core", "lib", "data", "cache", "temp", "tmp", "log", "cfg", "conf",
         "config", "settings", "preferences", "profile", "user", "admin", "guest",
         "root", "home", "dev", "prod", "test", "stage", "beta", "alpha", "daily",
@@ -131,40 +100,89 @@ public class FileRenamer {
         "info", "debug", "trace", "error", "fatal", "warn", "success", "fail"
     };
 
-    // ============ 扩展名列表（所有文件后缀随机从此取） ============
+    // ============ 扩展名列表 ============
     private static final String[] EXTENSIONS = {
-        ".cache", ".dll", ".bin", ".dat", ".tmp", ".log", ".sys", ".core", 
-        ".ota", ".idx", ".jar", ".so", ".xml", ".json", ".db", ".cfg", ".ini",
+        // 视频
         ".wmv", ".mp4", ".avi", ".mkv", ".mov", ".flv", ".webm", ".m4v",
         ".mpg", ".mpeg", ".3gp", ".mts", ".m2ts", ".ts", ".vob", ".ogv",
+        // 音频
         ".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a",
+        // 图片
         ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".tiff",
+        ".tif", ".heic", ".heif", ".avif", ".raw", ".cr2", ".nef", ".arw",
+        ".dng", ".orf", ".rw2", ".jfif", ".exr", ".hdr", ".pbm", ".pgm",
+        ".ppm", ".xbm", ".xpm", ".ico", ".cur", ".ani",
+        // 文档
         ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt",
-        ".md", ".rtf", ".odt", ".ods", ".odp",
+        ".md", ".rtf", ".odt", ".ods", ".odp", ".odg", ".odf", ".csv",
+        ".tsv", ".psd", ".ai", ".eps", ".cdr", ".xps", ".pages", ".numbers", ".key",
+        ".tex", ".latex", ".bib", ".sty", ".cls", ".dtx", ".ins", ".idx",
+        ".ilg", ".ind", ".ist",
+        // 压缩
         ".zip", ".rar", ".7z", ".gz", ".tar", ".iso", ".img", ".xz",
-        ".bz2", ".tgz", ".zst",
+        ".bz2", ".tgz", ".zst", ".lz", ".lz4", ".lzma", ".br",
+        ".arj", ".cab", ".dmg", ".hqx", ".sit", ".sea", ".bin", ".cue", ".mdf",
+        ".mds", ".nrg", ".vcd", ".cdi", ".bwi", ".bwt", ".ccd", ".sub",
+        ".udf", ".hfs",
+        // 移动端
         ".apk", ".aab", ".dex", ".class", ".java", ".kt", ".dart",
+        ".odex", ".vdex", ".oat", ".art", ".scm", ".diff", ".patch",
+        ".xapk", ".apks", ".apkm", ".obb",
+        // Web
         ".html", ".htm", ".css", ".scss", ".js", ".ts", ".jsx", ".tsx",
-        ".php", ".jsp", ".asp", ".aspx",
+        ".php", ".jsp", ".asp", ".aspx", ".wasm", ".webmanifest", ".wpt",
+        ".vue", ".svelte", ".astro", ".liquid", ".hbs", ".ejs", ".pug",
+        ".haml", ".slim", ".erbl",
+        // 代码
         ".c", ".cpp", ".h", ".hpp", ".py", ".rb", ".go", ".rs", ".swift",
-        ".pl", ".pm", ".sh", ".bash", ".zsh", ".fish"
+        ".pl", ".pm", ".sh", ".bash", ".zsh", ".fish", ".lua", ".r", ".m",
+        ".mm", ".vim", ".el", ".erl", ".hrl", ".ex", ".exs",
+        // 系统/配置文件
+        ".cache", ".dll", ".bin", ".dat", ".tmp", ".log", ".sys", ".core",
+        ".ota", ".idx", ".vdex", ".odex", ".jar", ".so", ".xml", ".json",
+        ".db", ".cfg", ".ini", ".yaml", ".toml", ".properties", ".conf",
+        ".lock", ".pid", ".socket", ".pipe", ".fifo", ".dev", ".null",
+        ".ko", ".o", ".a", ".la", ".diag", ".manifest",
+        // 安装包
+        ".exe", ".msi", ".dmg", ".pkg", ".deb", ".rpm", ".pacman",
+        ".nupkg", ".whl", ".egg", ".gem", ".war", ".ear",
+        // 字体
+        ".ttf", ".otf", ".woff", ".woff2", ".eot",
+        // 证书
+        ".cert", ".pem", ".key", ".crt", ".csr", ".jks", ".keystore", ".truststore",
+        ".der", ".p12", ".pfx",
+        // 3D
+        ".blend", ".3ds", ".fbx", ".obj", ".stl", ".dae", ".x3d", ".vrml", ".wrl",
+        ".glb", ".gltf",
+        // 游戏
+        ".game", ".arc", ".pak", ".sav", ".sol", ".rom", ".nes", ".smc", ".sfc",
+        ".n64", ".z64", ".ps1", ".psv", ".xbe", ".xex", ".wad", ".pk3", ".pk4",
+        ".bsp", ".vpk", ".gma", ".gs", ".mpq", ".sga", ".rpf", ".umap", ".uasset",
+        ".uexp", ".prefab", ".unity", ".asset", ".meta", ".cs", ".mat", ".shader", ".cginc",
+        // 虚拟机
+        ".vmdk", ".vdi", ".qcow2", ".vhdx", ".ova", ".ovf", ".vbox", ".vmx", ".vmxf",
+        // 其他
+        ".torrent", ".part", ".crdownload", ".download", ".resume",
+        ".bak", ".old", ".new", ".temp", ".sav", ".save",
+        ".state", ".checkpoint", ".snapshot", ".srt", ".ass", ".ssa", ".sub",
+        ".lrc", ".krc", ".vtt", ".ttml", ".dfxp",
+        ".nfo", ".diz", ".readme", ".chm", ".hlp", ".cnt",
+        ".gnupg", ".gpg", ".asc", ".sig", ".sign", ".sfv",
+        ".md5", ".sha1", ".sha256", ".sha512"
     };
 
     public FileRenamer(Context context) {
         this.context = context.getApplicationContext();
     }
 
-    /** 模式①：重命名整个目录树下的一级文件（不递归子目录）。 */
     public int renameFiles(Uri treeUri) {
         if (treeUri == null) {
             return 0;
         }
-
         DocumentFile dir = DocumentFile.fromTreeUri(context, treeUri);
         if (dir == null || !dir.exists() || !dir.isDirectory()) {
             return 0;
         }
-
         int count = 0;
         for (DocumentFile file : dir.listFiles()) {
             if (renameOne(file)) {
@@ -174,12 +192,10 @@ public class FileRenamer {
         return count;
     }
 
-    /** 模式②：只重命名传入的这一批具体文件（来自 ACTION_OPEN_DOCUMENT 多选）。 */
     public int renameFiles(List<Uri> fileUris) {
         if (fileUris == null || fileUris.isEmpty()) {
             return 0;
         }
-
         int count = 0;
         for (Uri uri : fileUris) {
             DocumentFile file = DocumentFile.fromSingleUri(context, uri);
@@ -190,7 +206,6 @@ public class FileRenamer {
         return count;
     }
 
-    /** 模式③：对已经从某个树里取出的 DocumentFile 精确挑选重命名（保证带树权限，可正常改名）。 */
     public int renameFiles(List<DocumentFile> files, boolean isDocumentFileList) {
         if (files == null || files.isEmpty()) {
             return 0;
@@ -208,28 +223,20 @@ public class FileRenamer {
         if (file == null || !file.isFile()) {
             return false;
         }
-
         String oldName = file.getName();
         if (oldName == null) {
             return false;
         }
-
-        // 所有文件后缀全部随机
         String newName = generateRandomFileName();
-
         boolean success;
         try {
             success = file.renameTo(newName);
         } catch (Exception e) {
             success = false;
         }
-
         if (!success) {
-            // DocumentFile 标准 rename 不支持时（常见于"最近"页面选出的 MediaStore 文件），
-            // 降级走 MediaStore 的 DISPLAY_NAME 更新接口再试一次。
             success = renameViaMediaStore(file.getUri(), newName);
         }
-
         if (success) {
             appendLog(oldName, newName);
         }
@@ -287,8 +294,6 @@ public class FileRenamer {
             int rows = context.getContentResolver().update(uri, values, null, null);
             return rows > 0;
         } catch (SecurityException e) {
-            // API 29+ 上，系统可能要求用户二次授权才能改别的 App 写入的媒体文件，
-            // 这里先如实返回失败，具体的授权弹窗流程要在 Activity 层处理。
             pendingSecurityException = e;
             return false;
         } catch (Exception e) {
@@ -296,7 +301,6 @@ public class FileRenamer {
         }
     }
 
-    /** 把「原名 -> 新名」追加写入 App 私有目录下的 rename_log.txt，方便日后查询/还原。 */
     private void appendLog(String oldName, String newName) {
         File logFile = new File(context.getFilesDir(), "rename_log.txt");
         String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(new Date());
@@ -304,7 +308,6 @@ public class FileRenamer {
         try (FileWriter writer = new FileWriter(logFile, true)) {
             writer.write(line);
         } catch (IOException ignored) {
-            // 日志写入失败不影响主流程，但会丢失这一条还原记录
         }
     }
 }
