@@ -10,7 +10,15 @@
         android:id="@+id/pick_dir"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="① 选择要整理的文件夹"
+        android:text="①A 选择要整理的文件夹（整个目录）"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/pick_files"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="①B 选择单个/多个文件（可多选）"
         android:textSize="16sp" />
 
     <Button
@@ -26,6 +34,6 @@
         android:id="@+id/result"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="请先选择一个文件夹（建议选 Download 目录）"
+        android:text="选①A（整文件夹）或①B（挑文件）都可以"
         android:layout_marginTop="20dp" />
 </LinearLayout>
