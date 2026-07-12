@@ -59,7 +59,13 @@ public class MainActivity extends AppCompatActivity {
                 selectedFileUris = persisted;
                 selectedTreeUri = null;
                 startButton.setEnabled(true);
-                result.setText("已选择 " + persisted.size() + " 个文件\n点击「开始批量重命名」继续");
+                StringBuilder uriList = new StringBuilder();
+                for (Uri u : persisted) {
+                    android.util.Log.e("FileRenamer", "选中文件 Uri: " + u);
+                    uriList.append(u.getAuthority()).append("\n");
+                }
+                result.setText("已选择 " + persisted.size() + " 个文件\n来源:\n" + uriList
+                        + "点击「开始批量重命名」继续");
             });
 
     @Override
