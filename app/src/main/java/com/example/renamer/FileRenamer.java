@@ -17,134 +17,116 @@ public class FileRenamer {
     private final Context context;
     private final Random random = new SecureRandom();
 
-    // ============ 500+ 核心词库 ============
+    // ============ 词库（已删除：医学、科学、食物、地理、动物、颜色、音乐、运动、神话、宇宙） ============
     private static final String[] WORDS = {
-        // 公司/品牌 (30)
+        // === 公司/品牌 (60) ===
         "google", "microsoft", "apple", "amazon", "facebook", "twitter", "instagram",
         "whatsapp", "telegram", "signal", "zoom", "slack", "discord", "reddit",
         "netflix", "spotify", "uber", "airbnb", "dropbox", "box", "salesforce",
         "oracle", "ibm", "hp", "dell", "cisco", "vmware", "sap", "adobe", "autodesk",
+        "nokia", "ericsson", "motorola", "lg", "sony", "panasonic", "philips",
+        "samsung", "xiaomi", "huawei", "oppo", "vivo", "zte", "lenovo", "asus",
+        "acer", "gigabyte", "msi", "coolpad", "oneplus", "blackberry", "htc",
+        "sharp", "fujitsu", "nec", "olympus", "canon", "nikon", "fujifilm",
 
-        // 中国公司 (30)
+        // === 中国公司 (30) ===
         "alibaba", "tencent", "baidu", "huawei", "xiaomi", "oppo", "vivo", "meizu",
         "oneplus", "zte", "lenovo", "asus", "acer", "gigabyte", "msi", "coolpad",
         "gionee", "hisense", "tcl", "skyworth", "konka", "changhong", "haier",
         "gree", "midea", "galanz", "supor", "joyoung", "roborock", "ecovacs",
 
-        // 系统/技术 (40)
+        // === 系统/技术 (60) ===
         "android", "ios", "windows", "linux", "unix", "macos", "tvos", "watchos",
         "kernel", "driver", "firmware", "bootloader", "recovery", "ota", "adb",
-        "fastboot", "recovery", "twrp", "magisk", "supersu", "busybox", "terminal",
+        "fastboot", "twrp", "magisk", "supersu", "busybox", "terminal",
         "shell", "bash", "zsh", "fish", "ssh", "ssl", "tls", "https", "http", "ftp",
         "smtp", "pop3", "imap", "dns", "dhcp", "nfs", "samba", "ldap", "kerberos",
+        "nfc", "bluetooth", "wifi", "5g", "4g", "lte", "gps", "glonass", "galileo",
+        "beidou", "zigbee", "thread", "matter", "homekit", "alexa", "assistant",
+        "siri", "bixby", "cortana", "heygoogle",
 
-        // 编程语言 (30)
+        // === 编程语言 (50) ===
         "java", "kotlin", "python", "ruby", "php", "swift", "rust", "go", "golang",
         "cplusplus", "csharp", "javascript", "typescript", "html", "css", "scss",
         "less", "sql", "plsql", "mongodb", "redis", "elasticsearch", "graphql",
         "rest", "soap", "xml", "json", "yaml", "toml", "protobuf",
+        "dart", "flutter", "react", "vue", "angular", "svelte", "solidjs",
+        "qwik", "alpine", "stimulus", "htmx", "wasm", "assembly", "fortran",
+        "pascal", "ada", "lisp", "scheme", "clojure", "elixir", "erlang",
 
-        // 框架/库 (30)
+        // === 框架/库 (50) ===
         "spring", "hibernate", "mybatis", "struts", "react", "vue", "angular",
         "jquery", "bootstrap", "tailwind", "flutter", "reactnative", "xamarin",
         "cocos", "unity", "unreal", "godot", "opencv", "tensorflow", "pytorch",
         "keras", "scikit", "numpy", "pandas", "matplotlib", "django", "flask",
-        "fastapi", "rails", "laravel",
+        "fastapi", "rails", "laravel", "symfony", "codeigniter", "cakephp",
+        "phoenix", "elixir", "clojure", "groovy", "scala", "haskell", "erlang",
+        "nodejs", "deno", "bun", "express", "nestjs", "nextjs", "nuxtjs",
 
-        // 数据库 (20)
+        // === 数据库 (40) ===
         "mysql", "postgresql", "oracle", "sqlite", "mongodb", "cassandra",
         "redis", "memcached", "elasticsearch", "solr", "clickhouse", "doris",
         "tidb", "oceanbase", "polardb", "gaussdb", "tair", "hbase", "hive", "spark",
+        "flink", "kafka", "pulsar", "rabbitmq", "rocketmq", "activemq", "zeromq",
+        "influxdb", "prometheus", "grafana", "victoriametrics", "thanos", "cortex",
+        "loki", "tempo", "phlare", "mimir", "alertmanager", "zookeeper", "etcd", "consul",
 
-        // 云/服务器 (25)
+        // === 云/服务器 (40) ===
         "aws", "azure", "gcp", "aliyun", "tencentcloud", "baiducloud", "huaweicloud",
         "digitalocean", "linode", "vultr", "cloudflare", "fastly", "akamai",
         "nginx", "apache", "tomcat", "jetty", "undertow", "wildfly", "weblogic",
-        "websphere", "jboss", "glassfish", "resin", "lighttpd",
+        "websphere", "jboss", "glassfish", "resin", "lighttpd", "caddy", "traefik",
+        "envoy", "haproxy", "varnish", "squid", "dnsmasq", "bind", "unbound", "powerdns",
+        "minio", "ceph", "glusterfs", "longhorn", "rancher", "k3s", "k8s", "openshift",
 
-        // 加密/安全 (20)
+        // === 加密/安全 (40) ===
         "crypto", "aes", "rsa", "ecc", "sha256", "md5", "base64", "hex", "binary",
         "encrypt", "decrypt", "signature", "certificate", "firewall", "antivirus",
-        "malware", "ransomware", "phishing", "spam", "hack",
+        "malware", "ransomware", "phishing", "spam", "hack", "exploit", "vulnerability",
+        "patch", "update", "hotfix", "backdoor", "trojan", "worm", "virus", "rootkit",
+        "keylogger", "adware", "spyware", "scareware", "cryptojacking", "blockchain",
+        "wallet", "mining", "hashrate", "difficulty", "nonce", "merkle", "oracle",
 
-        // 游戏/娱乐 (30)
+        // === 游戏/娱乐 (60) ===
         "game", "play", "music", "video", "movie", "tv", "show", "song", "album",
         "podcast", "stream", "broadcast", "live", "vod", "drama", "comedy",
         "action", "adventure", "rpg", "fps", "mmo", "moba", "card", "puzzle",
         "racing", "sports", "simulation", "strategy", "board", "arcade",
+        "minecraft", "fortnite", "valorant", "csgo", "dota", "lol", "wow",
+        "overwatch", "diablo", "starcraft", "warcraft", "hearthstone", "pubg",
+        "cod", "bf", "apex", "warzone", "destiny", "halo", "gears", "uncharted",
+        "godofwar", "horizon", "zelda", "mario", "pokemon", "sonic", "pacman",
 
-        // 科学/学术 (25)
-        "physics", "chemistry", "biology", "math", "algebra", "calculus", "geometry",
-        "statistics", "probability", "quantum", "relativity", "gravity", "magnetic",
-        "electric", "thermal", "kinetic", "atomic", "molecular", "cellular", "genetic",
-        "evolution", "ecosystem", "climate", "weather", "astronomy",
-
-        // 医学/健康 (20)
-        "medical", "health", "fitness", "nutrition", "vitamin", "protein", "carb",
-        "fat", "sugar", "blood", "heart", "brain", "liver", "kidney", "lung",
-        "bone", "muscle", "nerve", "cell", "dna",
-
-        // 食物/饮品 (25)
-        "coffee", "tea", "milk", "juice", "water", "soda", "beer", "wine", "whiskey",
-        "vodka", "rum", "gin", "tequila", "brandy", "champagne", "pizza", "pasta",
-        "burger", "sushi", "ramen", "taco", "burrito", "curry", "dimsum", "hotpot",
-
-        // 自然/地理 (30)
-        "ocean", "sea", "river", "lake", "mountain", "forest", "desert", "island",
-        "volcano", "glacier", "canyon", "valley", "plateau", "plain", "hill",
-        "beach", "reef", "delta", "fjord", "peninsula", "archipelago", "tundra",
-        "taiga", "savanna", "jungle", "swamp", "wetland", "grassland", "meadow", "orchard",
-
-        // 颜色 (20)
-        "red", "blue", "green", "yellow", "orange", "purple", "pink", "brown",
-        "black", "white", "gray", "gold", "silver", "bronze", "coral", "indigo",
-        "violet", "magenta", "cyan", "teal",
-
-        // 动物 (30)
-        "lion", "tiger", "bear", "wolf", "fox", "deer", "rabbit", "mouse", "bird",
-        "eagle", "hawk", "owl", "falcon", "shark", "whale", "dolphin", "seal",
-        "otter", "beaver", "squirrel", "monkey", "gorilla", "chimpanzee", "panda",
-        "koala", "kangaroo", "platypus", "armadillo", "anteater", "porcupine",
-
-        // 城市 (30)
-        "tokyo", "seoul", "beijing", "shanghai", "hongkong", "singapore", "bangkok",
-        "mumbai", "dubai", "istanbul", "moscow", "london", "paris", "berlin",
-        "rome", "madrid", "barcelona", "amsterdam", "brussels", "vienna", "zurich",
-        "geneva", "copenhagen", "stockholm", "oslo", "helsinki", "reykjavik", "dublin",
-        "edinburgh", "munich",
-
-        // 更多通用词 (50)
+        // === 通用词 (80) ===
         "system", "core", "lib", "data", "cache", "temp", "tmp", "log", "cfg", "conf",
         "config", "settings", "preferences", "profile", "user", "admin", "guest",
         "root", "home", "dev", "prod", "test", "stage", "beta", "alpha", "daily",
         "nightly", "release", "stable", "unstable", "legacy", "modern", "classic",
         "basic", "advanced", "pro", "max", "ultra", "premium", "deluxe", "lite",
-        "nano", "micro", "mini", "mega", "giga", "tera", "peta", "exa", "zetta"
+        "nano", "micro", "mini", "mega", "giga", "tera", "peta", "exa", "zetta",
+        "infinity", "eternity", "forever", "never", "always", "ever", "soon",
+        "later", "now", "then", "once", "twice", "thrice", "final", "initial", "first",
+        "last", "next", "prev", "current", "default", "custom", "new", "old",
+        "active", "inactive", "pending", "complete", "running", "stopped", "ready",
+        "unknown", "known", "visible", "hidden", "normal", "emergency", "critical",
+        "info", "debug", "trace", "error", "fatal", "warn", "success", "fail"
     };
 
-    // ============ 后缀列表 (80+) ============
+    // ============ 后缀列表 ============
     private static final String[] EXTENSIONS = {
-        // 系统/编程
         ".cache", ".dll", ".bin", ".dat", ".tmp", ".log", ".sys", ".core", 
         ".ota", ".idx", ".vdex", ".odex", ".jar", ".so", ".xml", ".json", 
         ".db", ".cfg", ".ini", ".yaml", ".toml", ".properties", ".conf",
-        // 视频/音频
         ".wmv", ".mp4", ".avi", ".mkv", ".mov", ".flv", ".webm", ".m4v",
         ".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a",
-        // 图片
         ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".tiff",
-        // 文档
         ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt",
         ".md", ".rtf", ".odt", ".ods", ".odp",
-        // 压缩
         ".zip", ".rar", ".7z", ".gz", ".tar", ".iso", ".img", ".xz",
         ".bz2", ".tgz", ".zst",
-        // 移动端
         ".apk", ".aab", ".dex", ".class", ".java", ".kt", ".dart",
-        // Web
         ".html", ".htm", ".css", ".scss", ".js", ".ts", ".jsx", ".tsx",
         ".php", ".jsp", ".asp", ".aspx",
-        // 代码
         ".c", ".cpp", ".h", ".hpp", ".py", ".rb", ".go", ".rs", ".swift",
         ".pl", ".pm", ".sh", ".bash", ".zsh", ".fish"
     };
@@ -195,40 +177,31 @@ public class FileRenamer {
     }
 
     private String generateRandomFileName() {
-        // 8种不同格式，让文件名更丰富
         int format = random.nextInt(8);
         String date = new SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(new Date());
         long ts = System.currentTimeMillis();
         
         switch (format) {
             case 0:
-                // com.android.system.core.cache
                 return randomWord() + "." + randomWord() + "." + 
                        randomWord() + "." + randomWord() + randomExtension();
             case 1:
-                // proj_20260712_7k9d.dll
                 return randomWord() + "_" + date + "_" + randomAlphanumeric(4) + randomExtension();
             case 2:
-                // google_android_data_1765432100000.log
                 return randomWord() + "_" + randomWord() + "_" + 
                        randomWord() + "_" + ts + randomExtension();
             case 3:
-                // system-kernel-driver-7k9d.bin
                 return randomWord() + "-" + randomWord() + "-" + 
                        randomWord() + "-" + randomAlphanumeric(4) + randomExtension();
             case 4:
-                // 20260712_android_core_cache.dat
                 return date + "_" + randomWord() + "_" + 
                        randomWord() + "_" + randomWord() + randomExtension();
             case 5:
-                // android.system.core.7k9d.cache
                 return randomWord() + "." + randomWord() + "." + 
                        randomWord() + "." + randomAlphanumeric(4) + randomExtension();
             case 6:
-                // cache_1765432100000_7k9d.tmp
                 return randomWord() + "_" + ts + "_" + randomAlphanumeric(4) + randomExtension();
             default:
-                // android_1765432100000_cache.ota
                 return randomWord() + "_" + ts + "_" + randomWord() + randomExtension();
         }
     }
