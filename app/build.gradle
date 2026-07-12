@@ -3,10 +3,13 @@ plugins {
 }
 
 android {
+
+    namespace "com.example.document"
+
     compileSdk 36
-    
+
     defaultConfig {
-        applicationId "com.example.renamer"
+        applicationId "com.example.document"
         minSdk 21
         targetSdk 36
         versionCode 1
