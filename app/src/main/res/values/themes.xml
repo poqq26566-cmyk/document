@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.FileRenamer" parent="android:style/Theme.Material.Light.NoActionBar">
+    <style name="Theme.FileRenamer" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:colorAccent">#666666</item>
     </style>
