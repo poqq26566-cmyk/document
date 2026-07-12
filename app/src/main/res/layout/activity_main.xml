@@ -10,7 +10,7 @@
         android:id="@+id/pick_dir"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="①A 选择要整理的文件夹（整个目录）"
+        android:text="方式A 选择要整理的文件夹（整个目录）"
         android:textSize="16sp" />
 
     <Button
@@ -18,7 +18,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="①B 选择单个/多个文件（可多选）"
+        android:text="方式B 选择单个/多个文件（可多选）"
         android:textSize="16sp" />
 
     <Button
@@ -26,7 +26,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="② 开始批量重命名"
+        android:text="开始批量重命名"
         android:textSize="16sp"
         android:enabled="false" />
 
@@ -34,6 +34,6 @@
         android:id="@+id/result"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="选①A（整文件夹）或①B（挑文件）都可以"
+        android:text="选方式A（整文件夹）或方式B（挑文件）都可以"
         android:layout_marginTop="20dp" />
 </LinearLayout>
